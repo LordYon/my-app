@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createUser, signToken } from "@/lib/auth";
+import { createUser } from "@/lib/auth";
 
 const schema = z.object({
   email: z.string().email(),
@@ -17,17 +17,7 @@ export async function POST(req: Request) {
 
   try {
     const user = await createUser(parsed.data.email, parsed.data.password);
-    const token = signToken(user.id);
-
-    const res = NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
-    res.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-    return res;
+    return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Registration failed";
     return NextResponse.json({ error: message }, { status: 409 });

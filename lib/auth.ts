@@ -1,13 +1,11 @@
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production";
 const BCRYPT_ROUNDS = 12;
 
 export type User = {
   id: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string; // Optional — OAuth users have no password
 };
 
 // In-memory store — replace with a real DB in production
@@ -25,16 +23,8 @@ export async function createUser(email: string, password: string): Promise<User>
 
 export async function verifyUser(email: string, password: string): Promise<User> {
   const user = users.get(email);
-  if (!user) throw new Error("Invalid email or password");
+  if (!user || !user.passwordHash) throw new Error("Invalid email or password");
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) throw new Error("Invalid email or password");
   return user;
-}
-
-export function signToken(userId: string): string {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: "7d" });
-}
-
-export function verifyToken(token: string): { sub: string } {
-  return jwt.verify(token, JWT_SECRET) as { sub: string };
 }
