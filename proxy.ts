@@ -1,28 +1,23 @@
+import { auth } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { verifyToken } from "@/lib/auth";
 
 // Routes that require authentication
 const PROTECTED = ["/dashboard"];
 
-export function proxy(req: NextRequest) {
+// Next.js 16 uses `proxy` as the named middleware export.
+// Wrapping with auth() injects req.auth (the NextAuth session).
+export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
 
   if (!isProtected) return NextResponse.next();
 
-  const token = req.cookies.get("token")?.value;
-  if (!token) {
+  if (!req.auth) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  try {
-    verifyToken(token);
-    return NextResponse.next();
-  } catch {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-}
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: ["/dashboard/:path*"],
